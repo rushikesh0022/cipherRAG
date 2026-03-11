@@ -1,6 +1,3 @@
-The full form of BFV is Brakerski-Fan-Vercauteren. It is named after the three cryptographers who invented it (Zvika Brakerski, Junfeng Fan, and Frederik Vercauteren).
-
-Here is the upgraded, professional README.md for your GitHub repository. It includes all the actual scientific context, mathematical tricks, and impressive benchmarks we achieved.
 
 🔐 Private RAG: Gap-Aware Integer Homomorphic Encryption
 
