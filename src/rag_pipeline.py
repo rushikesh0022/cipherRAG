@@ -9,7 +9,7 @@
 
 import time
 import numpy as np
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Optional
 
 from config import RAGConfig, DEFAULT_CONFIG
 from src.chunker import load_document, create_sample_corpus
@@ -59,6 +59,29 @@ class PrivateRAGPipeline:
         # state tracking
         self.is_indexed = False
         self.timings: Dict[str, float] = {}
+
+    def _normalize_int_score(self, raw_score: float) -> float:
+        """
+        Map an int dot-product score into [-1, 1] so one threshold works across settings.
+        """
+        if self.quantizer is None or self.doc_embeddings is None:
+            return 0.0
+
+        max_possible = self.quantizer.get_max_dot_product(self.doc_embeddings.shape[1])
+        if max_possible <= 0:
+            return 0.0
+
+        return float(raw_score) / float(max_possible)
+
+    def _build_relevance_info(self, top_score: float) -> Dict[str, float]:
+        normalized = self._normalize_int_score(top_score)
+        has_match = normalized >= self.config.relevance_threshold
+        return {
+            "top_score": float(top_score),
+            "top_score_normalized": normalized,
+            "relevance_threshold": float(self.config.relevance_threshold),
+            "has_match": has_match,
+        }
 
     def ingest_document(self, path: str) -> 'PrivateRAGPipeline':
         """
@@ -255,12 +278,24 @@ class PrivateRAGPipeline:
                 "score": result.all_scores[idx],
             })
 
+        top_score = result.top_k_scores[0] if result.top_k_scores else 0.0
+        relevance = self._build_relevance_info(top_score)
+
+        message = "Relevant chunks found."
+        if not relevance["has_match"]:
+            message = self.config.no_match_message
+
         return {
             "query": query,
             "mode": self.config.search_mode,
             "top_k": top_k,
             "results": retrieved_chunks,
             "latency_ms": result.latency_ms,
+            "has_match": relevance["has_match"],
+            "message": message,
+            "top_score": relevance["top_score"],
+            "top_score_normalized": relevance["top_score_normalized"],
+            "relevance_threshold": relevance["relevance_threshold"],
         }
 
     def search_batch(self, queries: List[str],
@@ -302,12 +337,24 @@ class PrivateRAGPipeline:
                     "score": sr.all_scores[idx],
                 })
 
+            top_score = sr.top_k_scores[0] if sr.top_k_scores else 0.0
+            relevance = self._build_relevance_info(top_score)
+
+            message = "Relevant chunks found."
+            if not relevance["has_match"]:
+                message = self.config.no_match_message
+
             all_results.append({
                 "query": queries[i],
                 "mode": self.config.search_mode,
                 "top_k": top_k,
                 "results": retrieved,
                 "latency_ms": sr.latency_ms,
+                "has_match": relevance["has_match"],
+                "message": message,
+                "top_score": relevance["top_score"],
+                "top_score_normalized": relevance["top_score_normalized"],
+                "relevance_threshold": relevance["relevance_threshold"],
             })
 
         return all_results

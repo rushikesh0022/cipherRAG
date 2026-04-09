@@ -10,9 +10,9 @@ from typing import List
 @dataclass
 class ChunkConfig:
     """How to split documents into chunks."""
-    chunk_size: int = 300          # words per chunk
-    chunk_overlap: int = 50        # overlapping words between chunks
-    min_chunk_length: int = 50     # discard chunks shorter than this
+    chunk_size: int = 20          # words per chunk
+    chunk_overlap: int = 5         # overlapping words between chunks
+    min_chunk_length: int = 10     # discard chunks shorter than this
 
 
 @dataclass
@@ -43,6 +43,10 @@ class BFVConfig:
 class RAGConfig:
     """Overall RAG pipeline configuration."""
     top_k: int = 3                     # number of chunks to retrieve
+    relevance_threshold: float = 0.02  # minimum normalized top score to accept a match
+    no_match_message: str = (
+        "Sorry, the query you asked is not present in the document."
+    )
     search_mode: str = "ct_ct"         # "ct_ct" (full privacy) or "ct_pt" (query privacy)
     chunk: ChunkConfig = field(default_factory=ChunkConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)

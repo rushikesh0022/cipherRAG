@@ -117,6 +117,11 @@ def run_with_sample():
     for i, res in enumerate(all_results):
         print(f"\n  Query {i+1}: \"{res['query']}\"")
         print(f"  Mode: {res['mode']}  |  Latency: {res['latency_ms']:.0f}ms")
+        print(f"  Top score (normalized): {res['top_score_normalized']:.4f} "
+              f"| Threshold: {res['relevance_threshold']:.4f}")
+        if not res['has_match']:
+            print(f"  ⚠️  {res['message']}")
+            continue
         for j, chunk in enumerate(res['results']):
             print(f"    [{j+1}] Score: {chunk['score']:>8}  "
                   f"Chunk {chunk['index']}: "
@@ -196,6 +201,11 @@ def run_with_pdf(pdf_path: str):
         result = pipeline.search(query)
 
         print(f"\n  Mode: {result['mode']}  |  Latency: {result['latency_ms']:.0f}ms")
+        print(f"  Top score (normalized): {result['top_score_normalized']:.4f} "
+              f"| Threshold: {result['relevance_threshold']:.4f}")
+        if not result['has_match']:
+            print(f"  ⚠️  {result['message']}")
+            continue
         print(f"  Top-{result['top_k']} results:")
         for j, chunk in enumerate(result['results']):
             print(f"\n    [{j+1}] Score: {chunk['score']}")
@@ -247,6 +257,11 @@ def run_interactive():
 
         print(f"\n  🔐 Encrypted search ({result['mode']}) "
               f"completed in {total:.0f}ms")
+        print(f"  Top score (normalized): {result['top_score_normalized']:.4f} "
+              f"| Threshold: {result['relevance_threshold']:.4f}")
+        if not result['has_match']:
+            print(f"  ⚠️  {result['message']}")
+            continue
         for j, chunk in enumerate(result['results']):
             print(f"\n    [{j+1}] Score: {chunk['score']}")
             text = chunk['text']
